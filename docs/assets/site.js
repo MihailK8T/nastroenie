@@ -9,6 +9,30 @@
   var DUMMY_SALT = "MDEyMzQ1Njc4OWFiY2RlZg==";
   var NICK_RE = /^[A-Za-z0-9_]{3,16}$/;
 
+  // Тот же аккаунт, что и в игре: вход проверяется в Supabase RPC.
+  var SUPABASE_URL = "https://oyagzodrjvzncniwuxvc.supabase.co";
+  var SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im95YWd6b2RyanZ6bmNuaXd1eHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTU1NDI4NzcsImV4cCI6MjExMTExODg3N30.71KSdnKSNs-YWXMVR-apD7haHhq0-HLCfvYsYcKoubk";
+
+  async function rpc(fn, body) {
+    var resp = await fetch(SUPABASE_URL + "/rest/v1/rpc/" + fn, {
+      method: "POST",
+      headers: {
+        "apikey": SUPABASE_KEY,
+        "Authorization": "Bearer " + SUPABASE_KEY,
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      body: JSON.stringify(body)
+    });
+    if (!resp.ok) {
+      var text = "";
+      try { text = await resp.text(); } catch (e) { /* ignore */ }
+      throw new Error(fn + ": HTTP " + resp.status + " " + text);
+    }
+    var raw = await resp.text();
+    try { return JSON.parse(raw); } catch (e) { return raw.replace(/^"|"$/g, ""); }
+  }
+
   var PLANS = {
     normal:    { name: "Базовый",  price: 0,   days: 0 },
     pebble:    { name: "Камешек",  price: 5,   days: 7 },
@@ -211,11 +235,9 @@
   }
 
   function passwordError(value) {
-    if (value.length < 10) { return "Пароль: минимум 10 символов."; }
-    if (value.length > 128) { return "Пароль: не больше 128 символов."; }
-    if (!/[A-Za-zА-Яа-яЁё]/.test(value) || !/\d/.test(value)) {
-      return "Пароль: нужны буквы и хотя бы одна цифра.";
-    }
+    // Те же правила, что у плагина в игре: 6–64 символа, без требований к составу.
+    if (value.length < 6) { return "Пароль: минимум 6 символов."; }
+    if (value.length > 64) { return "Пароль: не больше 64 символов."; }
     return "";
   }
 
@@ -427,12 +449,32 @@
         showAuthMsg("Браузер не поддерживает WebCrypto. Откройте страницу в современном браузере.", "error");
         return;
       }
-      var acc = accounts[key];
-      var hash = acc
-        ? await hashPassword(pass, acc.salt, acc.iter || ITERATIONS)
-        : await hashPassword(pass, DUMMY_SALT, ITERATIONS);
+      var material = null;
+      try {
+        material = await rpc("mc_salt", { p_name: key });
+      } catch (e) {
+        material = null;
+      }
 
-      if (!acc || !safeEqual(hash, acc.hash)) {
+      var salt = DUMMY_SALT;
+      var iter = ITERATIONS;
+      var known = typeof material === "string" && material.indexOf("|") > 0;
+      if (known) {
+        var parts = material.split("|");
+        salt = parts[0];
+        iter = parseInt(parts[1], 10) || ITERATIONS;
+      }
+      var hash = await hashPassword(pass, salt, iter);
+
+      var ok = false;
+      try {
+        ok = (await rpc("mc_verify", { p_name: key, p_hash: hash })) === true;
+      } catch (e) {
+        showAuthMsg("Сервис входа недоступен. Попробуйте позже.", "error");
+        return;
+      }
+
+      if (!ok) {
         var state = noteFail(key);
         if (state.locked) {
           showAuthMsg("Неверный ник или пароль. Вход заблокирован на 2 минуты.", "error");
@@ -443,13 +485,28 @@
       }
 
       clearFails(key);
-      if ((acc.iter || 0) !== ITERATIONS) {
-        var salt = randomB64(16);
-        acc.salt = salt;
-        acc.hash = await hashPassword(pass, salt, ITERATIONS);
-        acc.iter = ITERATIONS;
+      if (known && iter !== ITERATIONS) {
+        showAuthMsg("Пароль верный, но аккаунт сохранён со старыми параметрами. Смените пароль в игре.", "error");
+      }
+
+      // Локальная карточка профиля (тариф, монеты) — демо-часть сайта.
+      var acc = accounts[key];
+      if (!acc) {
+        var mail = "";
+        try {
+          mail = (await rpc("mc_email", { p_name: key })) || "";
+        } catch (e) { /* ignore */ }
+        acc = accounts[key] = {
+          nick: nick,
+          email: typeof mail === "string" ? mail : "",
+          createdAt: Date.now(),
+          plan: "normal",
+          planUntil: 0,
+          coins: 0
+        };
         saveAccounts();
       }
+
       if (!setSession(key)) {
         showAuthMsg("Вход выполнен, но сессию сохранить не удалось. Разрешите cookies/хранилище.", "error");
         render();
@@ -501,12 +558,32 @@
       }
       var salt = randomB64(16);
       var hash = await hashPassword(pass, salt, ITERATIONS);
+      var result;
+      try {
+        result = await rpc("mc_register", {
+          p_name: key,
+          p_email: email,
+          p_salt: salt,
+          p_iterations: ITERATIONS,
+          p_hash: hash,
+          p_uuid: null
+        });
+      } catch (e) {
+        showAuthMsg("Сервис регистрации недоступен. Попробуйте позже.", "error");
+        return;
+      }
+      if (result === "exists") {
+        showAuthMsg("Этот ник уже зарегистрирован. Войдите в аккаунт.", "error");
+        return;
+      }
+      if (result !== "ok") {
+        showAuthMsg("Не удалось создать аккаунт. Проверьте пароль и попробуйте снова.", "error");
+        return;
+      }
+
       accounts[key] = {
         nick: nick,
         email: email,
-        salt: salt,
-        hash: hash,
-        iter: ITERATIONS,
         createdAt: Date.now(),
         plan: "normal",
         planUntil: 0,
@@ -514,7 +591,8 @@
       };
       if (!saveAccounts()) {
         delete accounts[key];
-        showAuthMsg("Не удалось сохранить аккаунт: браузер запретил локальное хранилище.", "error");
+        showAuthMsg("Аккаунт создан, но браузер запретил локальное хранилище — войдите заново.", "error");
+        render();
         return;
       }
       if (!setSession(key)) {
@@ -525,7 +603,7 @@
       $("registerForm").reset();
       if (nextPage) { window.location.href = nextPage; return; }
       render();
-      showAuthMsg("Аккаунт создан. Тариф «Базовый», 0 монет.", "ok");
+      showAuthMsg("Аккаунт создан. Пароль тот же, что и в игре.", "ok");
     } catch (e) {
       showAuthMsg("Не удалось создать аккаунт. Обновите страницу и попробуйте снова.", "error");
     } finally {

@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#161718">
+<title>Монеты — Настроение</title>
+<meta name="description" content="Монеты сервера «Настроение»: паки 500, 1 500 и 4 000 монет для магазина, аукциона и аренды участков.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23161718'/%3E%3Crect x='3' y='3' width='10' height='10' fill='%235ec64d'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body data-page="coins">
+
+<header class="site-head">
+  <div class="wrap head-in">
+    <a class="brand" href="index.html"><i aria-hidden="true"></i>Настроение</a>
+    <nav class="nav" aria-label="Разделы">
+      <a href="server.html">Сервер</a>
+      <a href="plans.html">Тарифы</a>
+      <a href="coins.html" aria-current="page">Монеты</a>
+      <a href="account.html">Аккаунт</a>
+    </nav>
+    <div class="head-act" id="headerSlot">
+      <a class="btn btn-sm" href="account.html">Войти</a>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+  <div class="wrap page-head">
+    <p class="kicker">Внутренняя валюта</p>
+    <h1>Монеты</h1>
+    <p class="lead">Магазин, аукцион и аренда участков. Курс фиксированный, вывод невозможен. Чем больше пак, тем ниже цена за монету.</p>
+  </div>
+
+  <section class="page-body">
+    <div class="wrap">
+      <p class="form-msg" id="coinMsg" role="status" aria-live="polite" hidden></p>
+
+      <div class="packs">
+        <article class="pack">
+          <div class="amount">500</div>
+          <div class="unit">монет</div>
+          <div class="coin-price"><b>99 ₽</b><span class="rate">0,20 ₽ / монета</span></div>
+          <button class="btn btn-ghost" type="button" data-coins="500">Купить</button>
+        </article>
+        <article class="pack">
+          <div class="amount">1 500</div>
+          <div class="unit">монет</div>
+          <div class="coin-price"><b>249 ₽</b><span class="rate">0,17 ₽ / монета</span></div>
+          <button class="btn btn-ghost" type="button" data-coins="1500">Купить</button>
+        </article>
+        <article class="pack">
+          <div class="amount">4 000</div>
+          <div class="unit">монет</div>
+          <div class="coin-price"><b>599 ₽</b><span class="rate">0,15 ₽ / монета</span></div>
+          <button class="btn btn-ghost" type="button" data-coins="4000">Купить</button>
+        </article>
+      </div>
+
+      <p class="sec-note" style="margin-top:24px">Монеты начисляются на аккаунт сразу после демо-оплаты. Баланс виден в профиле.</p>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="wrap">
+    <div class="foot-grid">
+      <div>
+        <h4>Настроение</h4>
+        <p>Фан-проект Minecraft-сервера. Не связан с Mojang Studios и Microsoft.</p>
+      </div>
+      <div>
+        <h4>Разделы</h4>
+        <a href="server.html">Сервер</a>
+        <a href="plans.html">Тарифы</a>
+        <a href="coins.html">Монеты</a>
+        <a href="account.html">Аккаунт</a>
+      </div>
+      <div>
+        <h4>Демо-режим</h4>
+        <p>Оплата демонстрационная: списаний нет, монеты начисляются локально в браузере.</p>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>© 2026 «Настроение» · play.nastroenie.ru</span>
+      <span>Монеты · демо</span>
+    </div>
+  </div>
+</footer>
+
+<script src="assets/site.js"></script>
+</body>
+</html>

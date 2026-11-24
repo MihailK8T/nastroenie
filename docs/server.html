@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#161718">
+<title>Сервер — Настроение</title>
+<meta name="description" content="Режимы сервера «Настроение»: выживание «Тихий лес», анархия «Ветер», скайблок «Остров» и хаб. Координаты и команды перехода.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23161718'/%3E%3Crect x='3' y='3' width='10' height='10' fill='%235ec64d'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body data-page="server">
+
+<header class="site-head">
+  <div class="wrap head-in">
+    <a class="brand" href="index.html"><i aria-hidden="true"></i>Настроение</a>
+    <nav class="nav" aria-label="Разделы">
+      <a href="server.html" aria-current="page">Сервер</a>
+      <a href="plans.html">Тарифы</a>
+      <a href="coins.html">Монеты</a>
+      <a href="account.html">Аккаунт</a>
+    </nav>
+    <div class="head-act" id="headerSlot">
+      <a class="btn btn-sm" href="account.html">Войти</a>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+  <div class="wrap page-head">
+    <p class="kicker">Paper 1.21.11 · Java и Bedrock</p>
+    <h1>Сервер</h1>
+    <p class="lead">Один адрес и общий хаб. У каждого мира свой спавн, правила и экономика; переход — командой или через меню порталов.</p>
+    <div class="addr">
+      <span class="addr-label">Адрес</span>
+      <code>play.nastroenie.ru</code>
+      <button class="btn btn-ghost btn-sm" type="button" id="copyIp">Копировать</button>
+    </div>
+  </div>
+
+  <section class="page-body">
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="sec-title"><span class="sec-num">01</span><h2>Режимы</h2></div>
+        <p class="sec-note">Спавны указаны по осям X Y Z. Команды работают из любого мира.</p>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Мир</th><th>Правила</th><th>Спавн</th><th>Команда</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><b>Выживание «Тихий лес»</b></td><td>Приваты, экономика, авто-шахты. PvP только на арене.</td><td class="coords">−128 68 96</td><td><code>/survival</code></td></tr>
+            <tr><td><b>Анархия «Ветер»</b></td><td>Без приватов и откатов. PvP 24/7, гриф разрешён, античит.</td><td class="coords">2400 70 −1800</td><td><code>/anarchy</code></td></tr>
+            <tr><td><b>Скайблок «Остров»</b></td><td>Остров на команду до пяти человек, магазин и топ.</td><td class="coords">0 100 0</td><td><code>/skyblock</code></td></tr>
+            <tr><td><b>Хаб</b></td><td>Точка входа, меню режимов и три портала.</td><td class="coords">0 80 0</td><td><code>/hub</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="facts" style="margin-top:40px">
+        <div><span class="k">Режимы</span><b>3 + хаб</b></div>
+        <div><span class="k">Слотов</span><b>40</b></div>
+        <div><span class="k">Клиент</span><b>Java 21 · Bedrock</b></div>
+        <div><span class="k">Моды</span><b>не нужны</b></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="wrap">
+    <div class="foot-grid">
+      <div>
+        <h4>Настроение</h4>
+        <p>Фан-проект Minecraft-сервера. Не связан с Mojang Studios и Microsoft.</p>
+      </div>
+      <div>
+        <h4>Разделы</h4>
+        <a href="server.html">Сервер</a>
+        <a href="plans.html">Тарифы</a>
+        <a href="coins.html">Монеты</a>
+        <a href="account.html">Аккаунт</a>
+      </div>
+      <div>
+        <h4>Демо-режим</h4>
+        <p>Аккаунты, тарифы и монеты — локальная демонстрация: платежи не проводятся, данные не покидают браузер.</p>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>© 2026 «Настроение» · play.nastroenie.ru</span>
+      <span>Paper 1.21.11 · Java 21</span>
+    </div>
+  </div>
+</footer>
+
+<script src="assets/site.js"></script>
+</body>
+</html>

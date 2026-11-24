@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#161718">
+<title>Аккаунт — Настроение</title>
+<meta name="description" content="Вход и регистрация на сервере «Настроение»: ник из Minecraft, отдельный пароль сайта, тариф и баланс монет в профиле.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23161718'/%3E%3Crect x='3' y='3' width='10' height='10' fill='%235ec64d'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body data-page="account">
+
+<header class="site-head">
+  <div class="wrap head-in">
+    <a class="brand" href="index.html"><i aria-hidden="true"></i>Настроение</a>
+    <nav class="nav" aria-label="Разделы">
+      <a href="server.html">Сервер</a>
+      <a href="plans.html">Тарифы</a>
+      <a href="coins.html">Монеты</a>
+      <a href="account.html" aria-current="page">Аккаунт</a>
+    </nav>
+    <div class="head-act" id="headerSlot">
+      <a class="btn btn-sm" href="account.html">Войти</a>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+  <div class="wrap page-head">
+    <p class="kicker">Ник из Minecraft · пароль сайта</p>
+    <h1>Аккаунт</h1>
+    <p class="lead">Один профиль для тарифа, монет и срока действия. Пароль от игры не используется — задайте отдельный пароль для сайта.</p>
+  </div>
+
+  <section class="page-body">
+    <div class="wrap">
+      <div class="account-grid">
+        <div class="panel auth-card">
+          <div class="auth-head">
+            <h3>Вход и регистрация</h3>
+            <p>Один профиль для тарифа, монет и срока действия.</p>
+          </div>
+
+          <div class="tabs" id="authTabs" role="tablist" aria-label="Вход и регистрация">
+            <button type="button" role="tab" id="tabLogin" aria-selected="true" aria-controls="loginForm">Вход</button>
+            <button type="button" role="tab" id="tabRegister" aria-selected="false" aria-controls="registerForm">Регистрация</button>
+          </div>
+
+          <p class="form-msg" id="authMsg" role="status" aria-live="polite" hidden></p>
+
+          <form class="auth-form" id="loginForm" role="tabpanel" aria-labelledby="tabLogin" novalidate>
+            <div class="field">
+              <label for="loginNick">Ник в Minecraft</label>
+              <input id="loginNick" name="nick" type="text" autocomplete="username" autocapitalize="off" spellcheck="false" maxlength="16" placeholder="Steve" required>
+            </div>
+            <div class="field">
+              <label for="loginPass">Пароль сайта</label>
+              <input id="loginPass" name="password" type="password" autocomplete="current-password" maxlength="128" required>
+            </div>
+            <button class="btn btn-block" type="submit" id="loginSubmit">Войти</button>
+            <p class="hint muted" style="font-size:11.5px;line-height:1.5">Не используйте пароль от Minecraft, почты или других сервисов.</p>
+          </form>
+
+          <form class="auth-form" id="registerForm" role="tabpanel" aria-labelledby="tabRegister" hidden novalidate>
+            <div class="form-row">
+              <div class="field">
+                <label for="regNick">Ник в Minecraft</label>
+                <input id="regNick" name="nick" type="text" autocomplete="username" autocapitalize="off" spellcheck="false" maxlength="16" placeholder="Steve" required>
+                <span class="hint">3–16 символов: латиница, цифры, «_».</span>
+              </div>
+              <div class="field">
+                <label for="regEmail">Email <span class="muted">(необязательно)</span></label>
+                <input id="regEmail" name="email" type="email" autocomplete="email" spellcheck="false" maxlength="120" placeholder="you@example.com">
+                <span class="hint">Не проверяется в локальной версии.</span>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="field">
+                <label for="regPass">Пароль</label>
+                <input id="regPass" name="new-password" type="password" autocomplete="new-password" maxlength="128" required>
+                <span class="hint">Минимум 10 символов, буквы и цифра.</span>
+              </div>
+              <div class="field">
+                <label for="regPass2">Повтор пароля</label>
+                <input id="regPass2" name="new-password" type="password" autocomplete="new-password" maxlength="128" required>
+              </div>
+            </div>
+            <button class="btn btn-block" type="submit" id="regSubmit">Создать аккаунт</button>
+            <p class="hint muted" style="font-size:11.5px;line-height:1.5">Аккаунт хранится только в этом браузере. Восстановить пароль нельзя — сохраните его.</p>
+          </form>
+
+          <div class="profile" id="profile" hidden>
+            <div class="profile-head">
+              <div class="avatar" id="profileAvatar" aria-hidden="true">N</div>
+              <div class="who">
+                <p class="eyebrow">Игровой аккаунт</p>
+                <h3 id="profileNick">—</h3>
+                <p class="mail" id="profileEmail">—</p>
+              </div>
+              <span class="plan-badge" id="profilePlan">Базовый</span>
+            </div>
+
+            <p class="form-msg" id="profileMsg" role="status" aria-live="polite" hidden></p>
+
+            <dl class="dl">
+              <div><dt>Монеты</dt><dd id="profileCoins">0</dd></div>
+              <div><dt>Тариф до</dt><dd id="profileUntil">—</dd></div>
+              <div><dt>Создан</dt><dd id="profileCreated">—</dd></div>
+              <div><dt>Сессия до</dt><dd id="sessionUntil">—</dd></div>
+            </dl>
+
+            <div class="profile-actions">
+              <button class="btn btn-ghost btn-sm" type="button" id="renewBtn">Продлить тариф</button>
+              <a class="btn btn-ghost btn-sm" href="coins.html">Пополнить монеты</a>
+              <a class="btn btn-ghost btn-sm" href="plans.html">Выбрать тариф</a>
+              <button class="btn btn-ghost btn-sm" type="button" id="logoutBtn">Выйти</button>
+            </div>
+          </div>
+
+          <noscript><p class="form-msg error">Для входа нужен JavaScript.</p></noscript>
+        </div>
+
+        <aside class="panel info">
+          <h3>Аккаунт и безопасность</h3>
+          <h4>Что даёт</h4>
+          <p>Тариф, монеты и дата продления хранятся в профиле и привязаны к игровому нику.</p>
+          <h4>Пароль</h4>
+          <p>PBKDF2-HMAC-SHA256, 600 000 итераций, случайная соль 16 байт. Открытый пароль не сохраняется.</p>
+          <h4>Сессия</h4>
+          <p>Случайный токен на 12 часов. Кнопка «Выйти» удаляет сессию; после истечения нужен повторный вход.</p>
+          <div class="warn">Локальная версия без сервера: данные лежат в localStorage этого браузера. Не вводите пароль от Minecraft, почты или других сервисов — он не подойдёт и может быть скомпрометирован.</div>
+        </aside>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="wrap">
+    <div class="foot-grid">
+      <div>
+        <h4>Настроение</h4>
+        <p>Фан-проект Minecraft-сервера. Не связан с Mojang Studios и Microsoft.</p>
+      </div>
+      <div>
+        <h4>Разделы</h4>
+        <a href="server.html">Сервер</a>
+        <a href="plans.html">Тарифы</a>
+        <a href="coins.html">Монеты</a>
+        <a href="account.html">Аккаунт</a>
+      </div>
+      <div>
+        <h4>Демо-режим</h4>
+        <p>Аккаунты, тарифы и монеты — локальная демонстрация: платежи не проводятся, данные не покидают браузер.</p>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>© 2026 «Настроение» · play.nastroenie.ru</span>
+      <span>PBKDF2 · сессия 12 ч</span>
+    </div>
+  </div>
+</footer>
+
+<script src="assets/site.js"></script>
+</body>
+</html>

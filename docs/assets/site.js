@@ -626,10 +626,7 @@
     showProfileMsg("Тариф продлён до " + fmtDate(acc.planUntil) + ". Демо-оплата.", "ok");
   }
 
-  function copyIp() {
-    var text = "play.nastroenie.ru";
-    var btn = $("copyIp");
-    if (!btn) { return; }
+  function copyAddress(btn, text) {
     var label = btn.textContent;
 
     function done() {
@@ -665,7 +662,11 @@
     }
     if ($("loginForm")) { $("loginForm").addEventListener("submit", handleLogin); }
     if ($("registerForm")) { $("registerForm").addEventListener("submit", handleRegister); }
-    if ($("copyIp")) { $("copyIp").addEventListener("click", copyIp); }
+    document.querySelectorAll("[data-copy]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        copyAddress(btn, btn.getAttribute("data-copy"));
+      });
+    });
     if ($("renewBtn")) { $("renewBtn").addEventListener("click", renewPlan); }
     if ($("logoutBtn")) { $("logoutBtn").addEventListener("click", logout); }
 

@@ -14,7 +14,7 @@
 
 <header class="site-head">
   <div class="wrap head-in">
-    <a class="brand" href="index.html"><i aria-hidden="true"></i>Настроение</a>
+    <a class="brand" href="index-strict.html"><i aria-hidden="true"></i>Настроение</a>
     <nav class="nav" aria-label="Разделы">
       <a href="server.html">Сервер</a>
       <a href="plans.html">Тарифы</a>
@@ -33,11 +33,16 @@
       <div class="hero-copy">
         <p class="kicker">Minecraft · Paper 1.21.11 · Java и Bedrock</p>
         <h1>Сервер «Настроение»</h1>
-        <p class="lead">Выживание, анархия и скайблок на одном адресе. Аккаунт нужен для тарифа, монет и статуса — вход по игровому нику и отдельному паролю сайта.</p>
+        <p class="lead">Выживание, анархия и скайблок на одном адресе. Версия 1.21.11, моды не нужны. Аккаунт нужен для тарифа, монет и статуса — вход по игровому нику и паролю от игры.</p>
         <div class="addr">
-          <span class="addr-label">Адрес</span>
-          <code>play.nastroenie.ru</code>
-          <button class="btn btn-ghost btn-sm" type="button" id="copyIp">Копировать</button>
+          <span class="addr-label">Java-адрес</span>
+          <code>kot-mc.myserver.best</code>
+          <button class="btn btn-ghost btn-sm" type="button" data-copy="kot-mc.myserver.best">Копировать</button>
+        </div>
+        <div class="addr">
+          <span class="addr-label">Bedrock IP</span>
+          <code>185.9.145.107:34047</code>
+          <button class="btn btn-ghost btn-sm" type="button" data-copy="185.9.145.107:34047">Копировать</button>
         </div>
         <div class="hero-actions">
           <a class="btn" href="account.html" id="heroPrimary">Создать аккаунт</a>
@@ -59,10 +64,82 @@
     </div>
   </div>
 
+  <section id="connect">
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="sec-title"><span class="sec-num">01</span><h2>Как подключиться</h2></div>
+        <p class="sec-note">Версия 1.21.11. Java и Bedrock играют на одном сервере, моды и сборки не нужны.</p>
+      </div>
+
+      <div class="home-grid">
+        <div class="panel">
+          <h3>Java Edition (ПК)</h3>
+          <dl class="dl">
+            <div><dt>Адрес</dt><dd>kot-mc.myserver.best</dd></div>
+            <div><dt>Порт</dt><dd>34044 (обычно подставляется сам)</dd></div>
+            <div><dt>Версия</dt><dd>1.21.11</dd></div>
+          </dl>
+          <ol>
+            <li>Установите клиент Java Edition (как скачать — ниже).</li>
+            <li>Запустите игру и выберите версию <b>1.21.11</b> в лаунчере.</li>
+            <li>«Сетевая игра» → «Добавить сервер» → в поле «Адрес сервера» вставьте <code>kot-mc.myserver.best</code>.</li>
+            <li>Заходите и в чате выполните <code>/register пароль пароль</code> — это первая регистрация. Дальше при каждом входе <code>/login пароль</code>.</li>
+          </ol>
+        </div>
+
+        <div class="panel">
+          <h3>Bedrock Edition (телефон, планшет, консоль)</h3>
+          <dl class="dl">
+            <div><dt>IP</dt><dd>185.9.145.107</dd></div>
+            <div><dt>Порт</dt><dd>34047</dd></div>
+            <div><dt>Версия</dt><dd>1.21.x</dd></div>
+          </dl>
+          <ol>
+            <li>Установите Minecraft Bedrock (как скачать — ниже).</li>
+            <li>«Играть» → «Серверы» → «Добавить сервер».</li>
+            <li>Название — любое, адрес сервера — <code>185.9.145.107</code>, порт — <code>34047</code>.</li>
+            <li>Подключайтесь и зарегистрируйтесь так же: <code>/register пароль пароль</code>, потом <code>/login пароль</code>. Вход с телефона идёт без аккаунта Microsoft.</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top:16px">
+        <h3>Как скачать клиент</h3>
+
+        <h4>Java Edition на ПК (Windows, macOS, Linux)</h4>
+        <ol>
+          <li>Откройте официальный сайт <a href="https://www.minecraft.net/ru-ru/download" rel="noopener" target="_blank">minecraft.net/download</a> и скачайте лаунчер для своей системы.</li>
+          <li>Установите лаунчер и войдите в аккаунт Microsoft (тот же, что для Xbox). Купить игру можно там же, на minecraft.net, — это единственный официальный способ.</li>
+          <li>В лаунчере откройте вкладку «Установки» → «Новая установка» → версия <b>1.21.11</b> → «Создать».</li>
+          <li>Вкладка «Играть» → выберите созданную установку → «Играть».</li>
+          <li>Дальше «Сетевая игра» → «Добавить сервер» и адрес <code>kot-mc.myserver.best</code>.</li>
+        </ol>
+        <p class="hint muted">Если Minecraft уже куплен, скачивать ничего заново не нужно — достаточно выбрать версию 1.21.11 в лаунчере. Моды, Forge и OptiFine для входа не требуются.</p>
+
+        <h4>Bedrock Edition на телефоне и планшете</h4>
+        <ol>
+          <li>Android: Google Play → «Minecraft» (издатель Mojang) → «Установить». Платная версия, есть пробная.</li>
+          <li>iOS/iPadOS: App Store → «Minecraft» (разработчик Mojang) → «Загрузить».</li>
+          <li>Откройте игру, войдите в аккаунт Microsoft (можно создать бесплатно прямо в игре).</li>
+          <li>«Играть» → «Серверы» → «Добавить сервер»: адрес <code>185.9.145.107</code>, порт <code>34047</code>.</li>
+        </ol>
+
+        <h4>Bedrock на консоли и Windows</h4>
+        <ol>
+          <li>Windows 10/11: Microsoft Store → «Minecraft for Windows».</li>
+          <li>Xbox: магазин консоли → «Minecraft». PlayStation и Switch — только официальная версия из магазина консоли.</li>
+          <li>На консолях сторонние серверы по IP обычно недоступны: подключайтесь с ПК или телефона.</li>
+        </ol>
+
+        <p class="hint muted">Версия клиента должна совпадать с сервером: Java — 1.21.11, Bedrock — 1.21.x. Если лаунчер пишет «версия не поддерживается», обновите игру до последней.</p>
+      </div>
+    </div>
+  </section>
+
   <section id="sections">
     <div class="wrap">
       <div class="sec-head">
-        <div class="sec-title"><span class="sec-num">01</span><h2>Разделы</h2></div>
+        <div class="sec-title"><span class="sec-num">02</span><h2>Разделы</h2></div>
         <p class="sec-note">Каждая тема — на своей странице. Ничего не нужно искать в длинной ленте.</p>
       </div>
 

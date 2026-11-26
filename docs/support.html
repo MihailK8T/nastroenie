@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#161718">
+<title>Поддержка — Настроение</title>
+<meta name="description" content="Чат поддержки сервера «Настроение»: у каждого аккаунта своя переписка с администрацией.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23161718'/%3E%3Crect x='3' y='3' width='10' height='10' fill='%235ec64d'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/site.css">
+<link rel="stylesheet" href="assets/support.css">
+</head>
+<body data-page="support">
+
+<header class="site-head">
+  <div class="wrap head-in">
+    <a class="brand" href="index-strict.html"><i aria-hidden="true"></i>Настроение</a>
+    <nav class="nav" aria-label="Разделы">
+      <a href="server.html">Сервер</a>
+      <a href="plans.html">Тарифы</a>
+      <a href="coins.html">Монеты</a>
+      <a href="support.html" aria-current="page">Поддержка</a>
+      <a href="account.html">Аккаунт</a>
+    </nav>
+    <div class="head-act" id="headerSlot">
+      <a class="btn btn-sm" href="account.html">Войти</a>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+  <div class="wrap page-head">
+    <p class="kicker">Личный чат с администрацией</p>
+    <h1>Поддержка</h1>
+    <p class="lead">Войди тем же ником и паролем, что и в игре. У каждого аккаунта своя переписка — она никуда не теряется.</p>
+  </div>
+
+  <section class="page-body">
+    <div class="wrap support-wrap">
+
+      <div class="panel support-card" id="loginPanel">
+        <div class="support-card-head">
+          <h3>Вход в поддержку</h3>
+          <p>Пароль проверяется на сервере, в браузере он не сохраняется.</p>
+        </div>
+        <form class="auth-form" id="supportLoginForm" novalidate>
+          <div class="field">
+            <label for="supNick">Ник в Minecraft</label>
+            <input id="supNick" name="nick" type="text" autocomplete="username" autocapitalize="off" spellcheck="false" maxlength="16" placeholder="Steve" required>
+          </div>
+          <div class="field">
+            <label for="supPass">Пароль</label>
+            <input id="supPass" name="password" type="password" autocomplete="current-password" maxlength="64" required>
+          </div>
+          <p class="form-msg" id="supMsg" role="status" aria-live="polite" hidden></p>
+          <button class="btn" type="submit" id="supLoginBtn">Войти в чат</button>
+        </form>
+      </div>
+
+      <div class="panel support-chat" id="chatPanel" hidden>
+        <div class="chat-head">
+          <div class="chat-title">
+            <span class="chat-dot" id="chatDot" aria-hidden="true"></span>
+            <div>
+              <h3 id="chatNick">Поддержка</h3>
+              <p id="chatStatus">Загрузка…</p>
+            </div>
+          </div>
+          <div class="chat-actions">
+            <button class="btn btn-sm btn-ghost" type="button" id="closeTicketBtn" hidden>Закрыть заявку</button>
+            <button class="btn btn-sm btn-ghost" type="button" id="logoutBtn">Выйти</button>
+          </div>
+        </div>
+
+        <div class="chat-log" id="chatLog" aria-live="polite"></div>
+
+        <form class="chat-form" id="chatForm">
+          <textarea id="chatText" rows="2" maxlength="2000" placeholder="Напиши сообщение… Enter — отправить, Shift+Enter — новая строка"></textarea>
+          <button class="btn" type="submit" id="chatSendBtn">Отправить</button>
+        </form>
+        <p class="form-msg" id="chatMsg" role="status" aria-live="polite" hidden></p>
+      </div>
+
+      <p class="support-note">Заявки видят только администрация и ты. Не присылай пароль от аккаунта — он не нужен.</p>
+    </div>
+  </section>
+</main>
+
+<script src="assets/support.js"></script>
+</body>
+</html>

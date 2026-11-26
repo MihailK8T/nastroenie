@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#111315">
+<title>Поддержка · панель — Настроение</title>
+<meta name="description" content="Панель поддержки сервера «Настроение»: заявки, статистика и модераторы.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23111315'/%3E%3Crect x='3' y='3' width='10' height='10' fill='%235ec64d'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="admin.css">
+</head>
+<body>
+
+<div class="auth-wrap" id="bootView">
+  <div class="auth-card">
+    <div class="auth-logo"><i aria-hidden="true"></i>Настроение</div>
+    <p class="auth-sub">Панель поддержки</p>
+    <p class="auth-note" id="bootMsg">Проверяю подключение…</p>
+  </div>
+</div>
+
+<div class="auth-wrap" id="setupView" hidden>
+  <form class="auth-card" id="setupForm" novalidate>
+    <div class="auth-logo"><i aria-hidden="true"></i>Настроение</div>
+    <p class="auth-sub">Первый запуск: создать владельца</p>
+    <label class="field">
+      <span>Имя, которое увидят игроки</span>
+      <input id="setupName" type="text" maxlength="40" placeholder="Михаил" required>
+    </label>
+    <label class="field">
+      <span>Логин для входа</span>
+      <input id="setupLogin" type="text" maxlength="24" autocapitalize="off" spellcheck="false" placeholder="mihail" required>
+    </label>
+    <label class="field">
+      <span>Пароль (от 8 символов)</span>
+      <input id="setupPass" type="password" maxlength="64" autocomplete="new-password" required>
+    </label>
+    <p class="form-msg" id="setupMsg" role="status" aria-live="polite" hidden></p>
+    <button class="btn" type="submit">Создать и войти</button>
+  </form>
+</div>
+
+<div class="auth-wrap" id="loginView" hidden>
+  <form class="auth-card" id="loginForm" novalidate>
+    <div class="auth-logo"><i aria-hidden="true"></i>Настроение</div>
+    <p class="auth-sub">Панель поддержки</p>
+    <label class="field">
+      <span>Логин</span>
+      <input id="loginLogin" type="text" maxlength="24" autocapitalize="off" spellcheck="false" autocomplete="username" required>
+    </label>
+    <label class="field">
+      <span>Пароль</span>
+      <input id="loginPass" type="password" maxlength="64" autocomplete="current-password" required>
+    </label>
+    <p class="form-msg" id="loginMsg" role="status" aria-live="polite" hidden></p>
+    <button class="btn" type="submit">Войти</button>
+  </form>
+</div>
+
+<div class="app" id="appView" hidden>
+  <aside class="side">
+    <div class="side-brand"><i aria-hidden="true"></i><span>Настроение<small>поддержка</small></span></div>
+    <nav class="side-nav" id="sideNav">
+      <button type="button" data-tab="tickets" class="active">Заявки <b id="navCount" hidden>0</b></button>
+      <button type="button" data-tab="stats">Статистика</button>
+      <button type="button" data-tab="staff">Модераторы</button>
+    </nav>
+    <div class="side-user">
+      <div class="side-ava" id="meAva">?</div>
+      <div class="side-me">
+        <b id="meName">—</b>
+        <span id="meRole">—</span>
+      </div>
+      <button class="icon-btn" type="button" id="logoutBtn" title="Выйти">⎋</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <section class="tab active" id="tab-tickets">
+      <div class="tab-head">
+        <div>
+          <h1>Заявки</h1>
+          <p>Чат поддержки: у каждого аккаунта своя переписка.</p>
+        </div>
+        <div class="filters" id="filters">
+          <button type="button" data-status="" class="active">Все</button>
+          <button type="button" data-status="open">Открытые</button>
+          <button type="button" data-status="claimed">В работе</button>
+          <button type="button" data-status="closed">Закрытые</button>
+        </div>
+      </div>
+
+      <div class="tickets-grid">
+        <div class="tickets-list" id="ticketsList"></div>
+        <div class="ticket-pane" id="ticketPane">
+          <div class="pane-empty">Выбери заявку слева</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="tab" id="tab-stats">
+      <div class="tab-head">
+        <div>
+          <h1>Статистика</h1>
+          <p>Нагрузка на поддержку и работа модераторов.</p>
+        </div>
+        <button class="btn btn-sm" type="button" id="statsRefresh">Обновить</button>
+      </div>
+      <div class="cards" id="statCards"></div>
+      <div class="panel-box">
+        <h2>Команда</h2>
+        <div class="table-wrap">
+          <table class="table" id="statTeam"></table>
+        </div>
+      </div>
+    </section>
+
+    <section class="tab" id="tab-staff">
+      <div class="tab-head">
+        <div>
+          <h1>Модераторы</h1>
+          <p>Аккаунты поддержки: имя видно игрокам в чате.</p>
+        </div>
+      </div>
+
+      <div class="staff-layout">
+        <form class="panel-box" id="staffForm" novalidate>
+          <h2>Новый сотрудник</h2>
+          <label class="field">
+            <span>Имя в чате</span>
+            <input id="staffName" type="text" maxlength="40" placeholder="Михаил" required>
+          </label>
+          <label class="field">
+            <span>Логин</span>
+            <input id="staffLogin" type="text" maxlength="24" autocapitalize="off" spellcheck="false" placeholder="mihail" required>
+          </label>
+          <label class="field">
+            <span>Пароль (от 8 символов)</span>
+            <input id="staffPass" type="password" maxlength="64" autocomplete="new-password" required>
+          </label>
+          <label class="field">
+            <span>Роль</span>
+            <select id="staffRole">
+              <option value="moderator">Модератор</option>
+              <option value="admin">Админ</option>
+            </select>
+          </label>
+          <p class="form-msg" id="staffMsg" role="status" aria-live="polite" hidden></p>
+          <button class="btn" type="submit">Создать аккаунт</button>
+        </form>
+
+        <div class="panel-box">
+          <h2>Сотрудники</h2>
+          <div class="table-wrap">
+            <table class="table" id="staffList"></table>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="admin.js"></script>
+</body>
+</html>

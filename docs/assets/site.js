@@ -8,6 +8,7 @@
   var SESSION_MS = 12 * 60 * 60 * 1000;
   var DUMMY_SALT = "MDEyMzQ1Njc4OWFiY2RlZg==";
   var NICK_RE = /^[A-Za-z0-9_]{3,16}$/;
+  var TERMS_VERSION = "26.11.2026";
 
   // Тот же аккаунт, что и в игре: вход проверяется в Supabase RPC.
   var SUPABASE_URL = "https://oyagzodrjvzncniwuxvc.supabase.co";
@@ -364,6 +365,12 @@
     $("profileUntil").textContent = acc.plan === "normal" ? "бессрочно" : fmtDate(acc.planUntil);
     $("profileCreated").textContent = fmtDate(acc.createdAt);
     $("sessionUntil").textContent = sess ? fmtDateTime(sess.exp) : "—";
+    if ($("profileTerms")) {
+      $("profileTerms").textContent = acc.termsAt ? "приняты " + fmtDate(acc.termsAt) : "не приняты";
+    }
+    if ($("acceptTermsBtn")) {
+      $("acceptTermsBtn").hidden = !!acc.termsAt;
+    }
   }
 
   function render() {
@@ -384,7 +391,26 @@
     if (page === "account") { showAuthMsg("Вы вышли из аккаунта.", "ok"); }
   }
 
+  function consentChecked(boxId) {
+    var box = $(boxId);
+    return !box || box.checked;
+  }
+
+  function markTerms(acc) {
+    if (acc && !acc.termsAt) {
+      acc.termsAt = Date.now();
+      acc.termsVersion = TERMS_VERSION;
+      saveAccounts();
+    }
+  }
+
   function activatePlan(key) {
+    if (!consentChecked("planConsent")) {
+      showPlanMsg("Отметьте согласие с Пользовательским соглашением и Политикой конфиденциальности.", "error");
+      if ($("planConsent")) { $("planConsent").focus(); }
+      return;
+    }
+
     var acc = currentAccount();
     if (!acc) {
       gate("plans.html", key, key === "normal" ? "register" : "login");
@@ -393,6 +419,8 @@
 
     var plan = PLANS[key];
     if (!plan) { return; }
+
+    markTerms(acc);
 
     if (key === "normal") {
       acc.plan = "normal";
@@ -405,21 +433,28 @@
     saveAccounts();
     render();
     showPlanMsg(
-      "Тариф «" + plan.name + "» активен до " + fmtDate(acc.planUntil) + ". Демо-оплата: списаний нет.",
+      "Тариф «" + plan.name + "» активен до " + fmtDate(acc.planUntil) + ".",
       "ok"
     );
   }
 
   function addCoins(amount) {
+    if (!consentChecked("coinConsent")) {
+      showCoinMsg("Отметьте согласие с Пользовательским соглашением и Политикой конфиденциальности.", "error");
+      if ($("coinConsent")) { $("coinConsent").focus(); }
+      return;
+    }
+
     var acc = currentAccount();
     if (!acc) {
       gate("coins.html", "", "login");
       return;
     }
+    markTerms(acc);
     acc.coins = (acc.coins || 0) + amount;
     saveAccounts();
     render();
-    showCoinMsg("Начислено " + fmtNum(amount) + " монет. Баланс: " + fmtNum(acc.coins) + ". Демо-оплата.", "ok");
+    showCoinMsg("Начислено " + fmtNum(amount) + " монет. Баланс: " + fmtNum(acc.coins) + ".", "ok");
   }
 
   async function handleLogin(event) {
@@ -449,26 +484,9 @@
         showAuthMsg("Браузер не поддерживает WebCrypto. Откройте страницу в современном браузере.", "error");
         return;
       }
-      var material = null;
-      try {
-        material = await rpc("mc_salt", { p_name: key });
-      } catch (e) {
-        material = null;
-      }
-
-      var salt = DUMMY_SALT;
-      var iter = ITERATIONS;
-      var known = typeof material === "string" && material.indexOf("|") > 0;
-      if (known) {
-        var parts = material.split("|");
-        salt = parts[0];
-        iter = parseInt(parts[1], 10) || ITERATIONS;
-      }
-      var hash = await hashPassword(pass, salt, iter);
-
       var ok = false;
       try {
-        ok = (await rpc("mc_verify", { p_name: key, p_hash: hash })) === true;
+        ok = (await rpc("mc_verify", { p_name: key, p_password: pass })) === true;
       } catch (e) {
         showAuthMsg("Сервис входа недоступен. Попробуйте позже.", "error");
         return;
@@ -485,11 +503,8 @@
       }
 
       clearFails(key);
-      if (known && iter !== ITERATIONS) {
-        showAuthMsg("Пароль верный, но аккаунт сохранён со старыми параметрами. Смените пароль в игре.", "error");
-      }
 
-      // Локальная карточка профиля (тариф, монеты) — демо-часть сайта.
+      // Локальная карточка профиля (тариф, монеты).
       var acc = accounts[key];
       if (!acc) {
         var mail = "";
@@ -532,13 +547,16 @@
     var email = $("regEmail").value.trim();
     var pass = $("regPass").value;
     var pass2 = $("regPass2").value;
-    var error = nickError(nick) || emailError(email) || passwordError(pass) || (pass === pass2 ? "" : "Пароли не совпадают.");
+    var consentBox = $("regConsent");
+    var accepted = !consentBox || consentBox.checked;
+    var error = nickError(nick) || emailError(email) || passwordError(pass) || (pass === pass2 ? "" : "Пароли не совпадают.") || (accepted ? "" : "Подтвердите согласие с Пользовательским соглашением и Политикой конфиденциальности.");
 
     if (error) {
       showAuthMsg(error, "error");
       if (nickError(nick)) { $("regNick").focus(); }
       else if (passwordError(pass)) { $("regPass").focus(); }
       else if (pass !== pass2) { $("regPass2").focus(); }
+      else if (!accepted) { consentBox.focus(); }
       else { $("regEmail").focus(); }
       return;
     }
@@ -556,17 +574,12 @@
         showAuthMsg("Браузер не поддерживает WebCrypto. Откройте страницу в современном браузере.", "error");
         return;
       }
-      var salt = randomB64(16);
-      var hash = await hashPassword(pass, salt, ITERATIONS);
       var result;
       try {
         result = await rpc("mc_register", {
-          p_name: key,
-          p_email: email,
-          p_salt: salt,
-          p_iterations: ITERATIONS,
-          p_hash: hash,
-          p_uuid: null
+          p_name: nick,
+          p_password: pass,
+          p_email: email
         });
       } catch (e) {
         showAuthMsg("Сервис регистрации недоступен. Попробуйте позже.", "error");
@@ -587,7 +600,9 @@
         createdAt: Date.now(),
         plan: "normal",
         planUntil: 0,
-        coins: 0
+        coins: 0,
+        termsAt: Date.now(),
+        termsVersion: TERMS_VERSION
       };
       if (!saveAccounts()) {
         delete accounts[key];
@@ -623,7 +638,7 @@
     acc.planUntil = Math.max(Date.now(), acc.planUntil || 0) + plan.days * 24 * 60 * 60 * 1000;
     saveAccounts();
     render();
-    showProfileMsg("Тариф продлён до " + fmtDate(acc.planUntil) + ". Демо-оплата.", "ok");
+    showProfileMsg("Тариф продлён до " + fmtDate(acc.planUntil) + ".", "ok");
   }
 
   function copyAddress(btn, text) {
@@ -669,6 +684,17 @@
     });
     if ($("renewBtn")) { $("renewBtn").addEventListener("click", renewPlan); }
     if ($("logoutBtn")) { $("logoutBtn").addEventListener("click", logout); }
+    if ($("acceptTermsBtn")) {
+      $("acceptTermsBtn").addEventListener("click", function () {
+        var acc = currentAccount();
+        if (!acc) { return; }
+        acc.termsAt = Date.now();
+        acc.termsVersion = TERMS_VERSION;
+        saveAccounts();
+        render();
+        showProfileMsg("Условия приняты " + fmtDate(acc.termsAt) + ".", "ok");
+      });
+    }
 
     document.querySelectorAll("[data-plan]").forEach(function (btn) {
       btn.addEventListener("click", function () {

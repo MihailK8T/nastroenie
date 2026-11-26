@@ -198,6 +198,13 @@
     box.hidden = false;
   }
 
+  function vkErrText(res) {
+    if (!res) { return "пустой ответ VK ID"; }
+    if (res.error_description) { return res.error_description; }
+    if (res.error) { return typeof res.error === "string" ? res.error : (res.error.error_msg || "ошибка VK ID"); }
+    return "неизвестная ошибка";
+  }
+
   if (!("VKIDSDK" in window)) {
     slot.textContent = "";
     fail("Не удалось загрузить VK ID. Проверьте блокировщик рекламы и обновите страницу.");
@@ -227,6 +234,9 @@
     .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, function (payload) {
       VKID.Auth.exchangeCode(payload.code, payload.device_id)
         .then(function (data) {
+          if (!data || !data.access_token) {
+            throw new Error("обмен кода не дал access_token — " + vkErrText(data));
+          }
           return fetch("https://id.vk.ru/oauth2/user_info", {
             method: "POST",
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -238,8 +248,9 @@
         })
         .then(function (resp) { return resp.json(); })
         .then(function (res) {
+          if (res && res.error) { throw new Error("user_info — " + vkErrText(res)); }
           var user = (res && res.user) || res;
-          if (!user || !user.user_id) { throw new Error("no user"); }
+          if (!user || !user.user_id) { throw new Error("в ответе VK нет user_id"); }
           localStorage.setItem("nastroenie.vk.v1", JSON.stringify({
             user_id: String(user.user_id),
             name: [user.first_name, user.last_name].filter(Boolean).join(" "),
@@ -247,8 +258,9 @@
           }));
           window.location.replace("account.html?vk=1");
         })
-        .catch(function () {
-          fail("Не удалось получить данные VK ID. Попробуйте снова.");
+        .catch(function (e) {
+          console.error("VK ID:", e);
+          fail("VK ID: " + (e && e.message ? e.message : "не удалось войти") + ".");
         });
     });
 })();

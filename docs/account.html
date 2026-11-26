@@ -9,19 +9,6 @@
 <meta name="description" content="Вход и регистрация на сервере «Настроение»: ник из Minecraft, отдельный пароль сайта, тариф и баланс монет в профиле.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23161718'/%3E%3Crect x='3' y='3' width='10' height='10' fill='%235ec64d'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="assets/site.css">
-<style>
-  .oauth-box { margin-top: 18px; }
-  .oauth-or {
-    display: flex; align-items: center; gap: 10px;
-    margin: 0 0 14px; color: #8a8f95;
-    font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
-  }
-  .oauth-or::before, .oauth-or::after {
-    content: ""; flex: 1 1 auto; height: 1px; background: rgba(255,255,255,.09);
-  }
-  .oauth-slot { display: flex; justify-content: center; min-height: 44px; }
-  .oauth-slot > div { width: 100%; max-width: 360px; }
-</style>
 </head>
 <body data-page="account">
 
@@ -76,12 +63,6 @@
             <button class="btn btn-block" type="submit" id="loginSubmit">Войти</button>
             <p class="hint muted" style="font-size:11.5px;line-height:1.5">Это тот же пароль, который вы задали командой /register в игре.</p>
           </form>
-
-          <div class="oauth-box" id="vkLoginBox">
-            <p class="oauth-or"><span>или</span></p>
-            <div class="oauth-slot" id="vkLogin"></div>
-            <p class="hint muted" style="font-size:11.5px;line-height:1.5">При первом входе через VK ID ник и пароль от игры всё равно понадобятся — так чужой VK-аккаунт не займёт ваш ник.</p>
-          </div>
 
           <form class="auth-form" id="registerForm" role="tabpanel" aria-labelledby="tabRegister" hidden novalidate>
             <div class="form-row">
@@ -184,86 +165,5 @@
 </footer>
 
 <script src="assets/site.js"></script>
-<script src="https://unpkg.com/@vkid/sdk@<3.0.0/dist-sdk/umd/index.js"></script>
-<script>
-(function () {
-  var slot = document.getElementById("vkLogin");
-  if (!slot) { return; }
-
-  function fail(text) {
-    var box = document.getElementById("authMsg");
-    if (!box) { return; }
-    box.className = "form-msg error";
-    box.textContent = text;
-    box.hidden = false;
-  }
-
-  function vkErrText(res) {
-    if (!res) { return "пустой ответ VK ID"; }
-    if (res.error_description) { return res.error_description; }
-    if (res.error) { return typeof res.error === "string" ? res.error : (res.error.error_msg || "ошибка VK ID"); }
-    return "неизвестная ошибка";
-  }
-
-  if (!("VKIDSDK" in window)) {
-    slot.textContent = "";
-    fail("Не удалось загрузить VK ID. Проверьте блокировщик рекламы и обновите страницу.");
-    return;
-  }
-
-  var VKID = window.VKIDSDK;
-  var APP_ID = 54924879;
-
-  VKID.Config.init({
-    app: APP_ID,
-    redirectUrl: "https://mihailk8t.github.io/nastroenie/vk-callback.html",
-    responseMode: VKID.ConfigResponseMode.Callback,
-    source: VKID.ConfigSource.LOWCODE,
-    scope: "email"
-  });
-
-  new VKID.OneTap()
-    .render({
-      container: slot,
-      fastAuthEnabled: false,
-      showAlternativeLogin: true
-    })
-    .on(VKID.WidgetEvents.ERROR, function () {
-      fail("VK ID не ответил. Попробуйте ещё раз или войдите по нику.");
-    })
-    .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, function (payload) {
-      VKID.Auth.exchangeCode(payload.code, payload.device_id)
-        .then(function (data) {
-          if (!data || !data.access_token) {
-            throw new Error("обмен кода не дал access_token — " + vkErrText(data));
-          }
-          return fetch("https://id.vk.ru/oauth2/user_info", {
-            method: "POST",
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
-            body: new URLSearchParams({
-              access_token: data.access_token,
-              client_id: String(APP_ID)
-            })
-          });
-        })
-        .then(function (resp) { return resp.json(); })
-        .then(function (res) {
-          if (res && res.error) { throw new Error("user_info — " + vkErrText(res)); }
-          var user = (res && res.user) || res;
-          if (!user || !user.user_id) { throw new Error("в ответе VK нет user_id"); }
-          localStorage.setItem("nastroenie.vk.v1", JSON.stringify({
-            user_id: String(user.user_id),
-            name: [user.first_name, user.last_name].filter(Boolean).join(" "),
-            email: user.email || ""
-          }));
-          window.location.replace("account.html?vk=1");
-        })
-        .catch(function (e) {
-          console.error("VK ID:", e);
-          fail("VK ID: " + (e && e.message ? e.message : "не удалось войти") + ".");
-        });
-    });
-})();
-</script>
 </body>
 </html>

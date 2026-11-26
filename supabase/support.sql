@@ -699,7 +699,7 @@ begin
      set status = 'claimed', claimed_by = v_staff.id, updated_at = now()
    where id = v_thread.id;
 
-  insert into public.support_messages (thread_id, kind, author_name, body)
+  insert into public.support_messages (thread_id, kind, body)
   values (v_thread.id, 'system', v_staff.name || ' подключился к чату');
 
   return json_build_object('ok', true);
@@ -740,7 +740,7 @@ begin
        set status = 'claimed', claimed_by = v_staff.id
      where id = v_thread.id;
 
-    insert into public.support_messages (thread_id, kind, author_name, body)
+    insert into public.support_messages (thread_id, kind, body)
     values (v_thread.id, 'system', v_staff.name || ' подключился к чату');
   elsif v_thread.claimed_by <> v_staff.id then
     raise exception 'claimed by another';
@@ -789,7 +789,7 @@ begin
          updated_at = now()
    where id = v_thread.id;
 
-  insert into public.support_messages (thread_id, kind, author_name, body)
+  insert into public.support_messages (thread_id, kind, body)
   values (v_thread.id, 'system', v_staff.name || ' закрыл заявку');
 
   return json_build_object('ok', true);

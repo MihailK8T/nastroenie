@@ -255,3 +255,92 @@ $$;
 
 revoke all on function public.buy_coins(integer) from public;
 grant execute on function public.buy_coins(integer) to authenticated;
+
+-- ---------------------------------------------------------------------------
+-- Вход по нику и паролю для сайта и игры.
+-- Таблица закрыта: клиент работает только через RPC ниже.
+-- ---------------------------------------------------------------------------
+create table if not exists public.mc_accounts (
+  id uuid primary key default gen_random_uuid(),
+  nick text not null,
+  nick_lower text not null unique,
+  email text,
+  password_hash text not null,
+  created_at timestamptz not null default now()
+);
+
+alter table public.mc_accounts enable row level security;
+revoke all on public.mc_accounts from anon, authenticated;
+
+create or replace function public.mc_register(p_name text, p_password text, p_email text default '')
+returns text
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_nick text := btrim(coalesce(p_name, ''));
+  v_email text := nullif(btrim(coalesce(p_email, '')), '');
+begin
+  if v_nick !~ '^[A-Za-z0-9_]{3,16}$' then
+    return 'bad';
+  end if;
+  if length(coalesce(p_password, '')) < 6 or length(p_password) > 128 then
+    return 'bad';
+  end if;
+  if exists (select 1 from public.mc_accounts where nick_lower = lower(v_nick)) then
+    return 'exists';
+  end if;
+
+  insert into public.mc_accounts (nick, nick_lower, email, password_hash)
+  values (v_nick, lower(v_nick), v_email, crypt(p_password, gen_salt('bf', 12)));
+
+  return 'ok';
+exception
+  when unique_violation then
+    return 'exists';
+end;
+$$;
+
+revoke all on function public.mc_register(text, text, text) from public;
+grant execute on function public.mc_register(text, text, text) to anon, authenticated;
+
+create or replace function public.mc_verify(p_name text, p_password text)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_hash text;
+begin
+  select password_hash into v_hash
+    from public.mc_accounts
+   where nick_lower = lower(btrim(coalesce(p_name, '')));
+
+  if v_hash is null then
+    perform crypt(coalesce(p_password, ''), gen_salt('bf', 12));
+    return false;
+  end if;
+
+  return crypt(coalesce(p_password, ''), v_hash) = v_hash;
+end;
+$$;
+
+revoke all on function public.mc_verify(text, text) from public;
+grant execute on function public.mc_verify(text, text) to anon, authenticated;
+
+create or replace function public.mc_email(p_name text)
+returns text
+language sql
+security definer
+set search_path = public
+as $$
+  select coalesce(email, '')
+    from public.mc_accounts
+   where nick_lower = lower(btrim(coalesce(p_name, '')))
+   limit 1;
+$$;
+
+revoke all on function public.mc_email(text) from public;
+grant execute on function public.mc_email(text) to anon, authenticated;

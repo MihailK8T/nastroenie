@@ -4,6 +4,8 @@
   var LS_ACCOUNTS = "nastroenie.accounts.v1";
   var LS_THROTTLE = "nastroenie.throttle.v1";
   var SS_SESSION = "nastroenie.session.v1";
+  var LS_VK = "nastroenie.vk.v1";
+  var SS_VK_PENDING = "nastroenie.vk.pending.v1";
   var ITERATIONS = 600000;
   var SESSION_MS = 12 * 60 * 60 * 1000;
   var DUMMY_SALT = "MDEyMzQ1Njc4OWFiY2RlZg==";
@@ -168,6 +170,89 @@
     try { sessionStorage.removeItem(SS_SESSION); } catch (e) { /* ignore */ }
   }
 
+  function readVkProfile() {
+    try {
+      var p = JSON.parse(localStorage.getItem(LS_VK) || "null");
+      if (!p || !p.user_id) { return null; }
+      return p;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function takeVkProfile() {
+    var p = readVkProfile();
+    try { localStorage.removeItem(LS_VK); } catch (e) { /* ignore */ }
+    return p;
+  }
+
+  function readVkPending() {
+    try {
+      var p = JSON.parse(sessionStorage.getItem(SS_VK_PENDING) || "null");
+      if (!p || !p.sub) { return null; }
+      return p;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function saveVkPending(data) {
+    try { sessionStorage.setItem(SS_VK_PENDING, JSON.stringify(data)); } catch (e) { /* ignore */ }
+  }
+
+  function clearVkPending() {
+    try { sessionStorage.removeItem(SS_VK_PENDING); } catch (e) { /* ignore */ }
+  }
+
+  async function startSessionFor(nick, email) {
+    var key = nick.toLowerCase();
+    var acc = accounts[key];
+    if (!acc) {
+      var mail = email || "";
+      if (!mail) {
+        try { mail = (await rpc("mc_email", { p_name: key })) || ""; } catch (e) { mail = ""; }
+      }
+      acc = accounts[key] = {
+        nick: nick,
+        email: typeof mail === "string" ? mail : "",
+        createdAt: Date.now(),
+        plan: "normal",
+        planUntil: 0,
+        coins: 0
+      };
+      saveAccounts();
+    }
+    return setSession(key) ? acc : null;
+  }
+
+  async function useVkProfile(profile) {
+    var sub = String(profile.user_id || "");
+    if (!sub) { return; }
+    var nick = null;
+    try {
+      nick = await rpc("mc_oauth_nick", { p_provider: "vk", p_sub: sub });
+    } catch (e) {
+      nick = null;
+    }
+
+    if (typeof nick === "string" && nick) {
+      var acc = await startSessionFor(nick, profile.email || "");
+      if (acc) {
+        render();
+        showAuthMsg("Вы вошли через VK ID как " + acc.nick + ".", "ok");
+        return;
+      }
+    }
+
+    saveVkPending({ sub: sub, name: profile.name || "", email: profile.email || "" });
+    switchTab("login");
+    showAuthMsg(
+      "VK ID подключён" + (profile.name ? " (" + profile.name + ")" : "") +
+      ". Введите игровой ник и пароль — привяжем VK к аккаунту.",
+      "ok"
+    );
+  }
+
   function currentAccount() {
     var s = getSession();
     if (!s) { return null; }
@@ -284,6 +369,7 @@
     tabRegister.setAttribute("aria-selected", String(activeTab === "register"));
     $("loginForm").hidden = activeTab !== "login";
     $("registerForm").hidden = activeTab !== "register";
+    if ($("vkLoginBox")) { $("vkLoginBox").hidden = activeTab !== "login"; }
     showAuthMsg("", "");
   }
 
@@ -351,6 +437,7 @@
     $("tabRegister").setAttribute("aria-selected", String(activeTab === "register"));
     $("loginForm").hidden = !!acc || activeTab !== "login";
     $("registerForm").hidden = !!acc || activeTab !== "register";
+    if ($("vkLoginBox")) { $("vkLoginBox").hidden = !!acc || activeTab !== "login"; }
     profile.hidden = !acc;
 
     if (!acc) { return; }
@@ -504,6 +591,29 @@
 
       clearFails(key);
 
+      var vkNote = "";
+      var vkPending = readVkPending();
+      if (vkPending) {
+        try {
+          var linked = await rpc("mc_oauth_link", {
+            p_provider: "vk",
+            p_sub: vkPending.sub,
+            p_name: key,
+            p_password: pass,
+            p_email: vkPending.email || ""
+          });
+          if (linked === "ok") {
+            clearVkPending();
+            vkNote = " VK ID привязан к нику.";
+          } else if (linked === "linked_other") {
+            clearVkPending();
+            vkNote = " Этот ник уже привязан к другому VK ID.";
+          }
+        } catch (e) {
+          /* привязка не мешает обычному входу */
+        }
+      }
+
       // Локальная карточка профиля (тариф, монеты).
       var acc = accounts[key];
       if (!acc) {
@@ -530,7 +640,7 @@
       $("loginForm").reset();
       if (nextPage) { window.location.href = nextPage; return; }
       render();
-      showAuthMsg("Вы вошли как " + acc.nick + ".", "ok");
+      showAuthMsg("Вы вошли как " + acc.nick + "." + vkNote, "ok");
     } catch (e) {
       showAuthMsg("Не удалось выполнить вход. Обновите страницу и попробуйте снова.", "error");
     } finally {
@@ -670,6 +780,18 @@
 
   function init() {
     render();
+
+    if (page === "account") {
+      var vkProfile = takeVkProfile();
+      if (vkProfile) {
+        useVkProfile(vkProfile);
+        if (window.history && history.replaceState) {
+          history.replaceState(null, "", "account.html" + (nextPage ? "?next=" + encodeURIComponent(nextPage) : ""));
+        }
+      } else if (readVkPending()) {
+        switchTab("login");
+      }
+    }
 
     if ($("tabLogin") && $("tabRegister")) {
       $("tabLogin").addEventListener("click", function () { switchTab("login"); });

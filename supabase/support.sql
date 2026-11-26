@@ -19,6 +19,81 @@ create table if not exists public.mc_accounts (
 alter table public.mc_accounts enable row level security;
 revoke all on public.mc_accounts from anon, authenticated;
 
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+     where table_schema = 'public' and table_name = 'mc_accounts' and column_name = 'pass_hash'
+  ) and not exists (
+    select 1 from information_schema.columns
+     where table_schema = 'public' and table_name = 'mc_accounts' and column_name = 'password_hash'
+  ) then
+    alter table public.mc_accounts rename column pass_hash to password_hash;
+  end if;
+end $$;
+
+-- --------------------------------------------------------------------------
+-- Регистрация и вход
+-- --------------------------------------------------------------------------
+create or replace function public.mc_register(p_name text, p_password text, p_email text default null)
+returns text
+language plpgsql
+security definer
+set search_path = public, extensions
+as $$
+declare
+  v_nick text := btrim(coalesce(p_name, ''));
+  v_key text := lower(btrim(coalesce(p_name, '')));
+  v_pass text := coalesce(p_password, '');
+begin
+  if v_nick !~ '^[A-Za-z0-9_]{3,16}$' then
+    raise exception 'bad nick';
+  end if;
+
+  if length(v_pass) < 6 or length(v_pass) > 64 then
+    raise exception 'bad password';
+  end if;
+
+  if exists (select 1 from public.mc_accounts where nick_lower = v_key) then
+    return 'exists';
+  end if;
+
+  insert into public.mc_accounts (nick_lower, nick, password_hash, email)
+  values (v_key, v_nick, crypt(v_pass, gen_salt('bf', 10)), nullif(btrim(coalesce(p_email, '')), ''));
+
+  return 'ok';
+exception
+  when unique_violation then return 'exists';
+end;
+$$;
+
+create or replace function public.mc_verify(p_name text, p_password text)
+returns boolean
+language plpgsql
+security definer
+set search_path = public, extensions
+as $$
+declare
+  v_ok boolean;
+begin
+  select (password_hash = crypt(coalesce(p_password, ''), password_hash)) and not banned
+    into v_ok
+    from public.mc_accounts
+   where nick_lower = lower(btrim(coalesce(p_name, '')));
+
+  return coalesce(v_ok, false);
+end;
+$$;
+
+create or replace function public.mc_email(p_name text)
+returns text
+language sql
+security definer
+set search_path = public, extensions
+as $$
+  select email from public.mc_accounts where nick_lower = lower(btrim(coalesce(p_name, '')));
+$$;
+
 -- --------------------------------------------------------------------------
 -- Сотрудники поддержки
 -- --------------------------------------------------------------------------
@@ -882,5 +957,13 @@ grant execute on function public.staff_close(text, bigint) to anon, authenticate
 grant execute on function public.staff_list(text) to anon, authenticated;
 grant execute on function public.staff_create(text, text, text, text, text) to anon, authenticated;
 grant execute on function public.staff_set_active(text, bigint, boolean) to anon, authenticated;
+
+revoke all on function public.mc_register(text, text, text) from public, anon, authenticated;
+revoke all on function public.mc_verify(text, text) from public, anon, authenticated;
+revoke all on function public.mc_email(text) from public, anon, authenticated;
+
+grant execute on function public.mc_register(text, text, text) to anon, authenticated;
+grant execute on function public.mc_verify(text, text) to anon, authenticated;
+grant execute on function public.mc_email(text) to anon, authenticated;
 
 notify pgrst, 'reload schema';

@@ -10,7 +10,7 @@ create extension if not exists pgcrypto;
 create table if not exists public.mc_accounts (
   nick_lower text primary key,
   nick text not null,
-  pass_hash text not null,
+  password_hash text not null,
   email text,
   banned boolean not null default false,
   created_at timestamptz not null default now()
@@ -94,17 +94,20 @@ revoke all on public.support_messages from anon, authenticated;
 -- --------------------------------------------------------------------------
 create or replace function public.new_token()
 returns text
-language sql
+language plpgsql
 volatile
+set search_path = public, extensions
 as $$
-  select encode(gen_random_bytes(24), 'hex');
+begin
+  return encode(gen_random_bytes(24), 'hex');
+end;
 $$;
 
 create or replace function public.staff_require(p_token text, p_min_role text default 'moderator')
 returns public.staff
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_staff public.staff;
@@ -137,7 +140,7 @@ create or replace function public.support_player(p_token text)
 returns text
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_nick text;
@@ -155,67 +158,7 @@ begin
 end;
 $$;
 
--- --------------------------------------------------------------------------
--- Аккаунты: регистрация и вход (общие для игры и сайта)
--- --------------------------------------------------------------------------
-create or replace function public.mc_register(p_name text, p_password text, p_email text default null)
-returns text
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-  v_nick text := btrim(coalesce(p_name, ''));
-  v_key text := lower(btrim(coalesce(p_name, '')));
-  v_pass text := coalesce(p_password, '');
-begin
-  if v_nick !~ '^[A-Za-z0-9_]{3,16}$' then
-    raise exception 'bad nick';
-  end if;
-
-  if length(v_pass) < 6 or length(v_pass) > 64 then
-    raise exception 'bad password';
-  end if;
-
-  if exists (select 1 from public.mc_accounts where nick_lower = v_key) then
-    return 'exists';
-  end if;
-
-  insert into public.mc_accounts (nick_lower, nick, pass_hash, email)
-  values (v_key, v_nick, crypt(v_pass, gen_salt('bf', 10)), nullif(btrim(coalesce(p_email, '')), ''));
-
-  return 'ok';
-exception
-  when unique_violation then return 'exists';
-end;
-$$;
-
-create or replace function public.mc_verify(p_name text, p_password text)
-returns boolean
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-  v_ok boolean;
-begin
-  select (pass_hash = crypt(coalesce(p_password, ''), pass_hash)) and not banned
-    into v_ok
-    from public.mc_accounts
-   where nick_lower = lower(btrim(coalesce(p_name, '')));
-
-  return coalesce(v_ok, false);
-end;
-$$;
-
-create or replace function public.mc_email(p_name text)
-returns text
-language sql
-security definer
-set search_path = public
-as $$
-  select email from public.mc_accounts where nick_lower = lower(btrim(coalesce(p_name, '')));
-$$;
+-- Аккаунты и вход определены в supabase/schema.sql; здесь их не переопределяем.
 
 -- --------------------------------------------------------------------------
 -- Вход игрока в чат поддержки
@@ -224,7 +167,7 @@ create or replace function public.support_login(p_name text, p_password text)
 returns json
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_key text := lower(btrim(coalesce(p_name, '')));
@@ -242,7 +185,7 @@ begin
     raise exception 'banned';
   end if;
 
-  if v_acc.pass_hash <> crypt(coalesce(p_password, ''), v_acc.pass_hash) then
+  if v_acc.password_hash <> crypt(coalesce(p_password, ''), v_acc.password_hash) then
     raise exception 'bad credentials';
   end if;
 
@@ -276,7 +219,7 @@ create or replace function public.support_state(p_token text)
 returns json
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_key text := public.support_player(p_token);
@@ -323,7 +266,7 @@ create or replace function public.support_send(p_token text, p_body text)
 returns json
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_key text := public.support_player(p_token);
@@ -373,7 +316,7 @@ create or replace function public.support_close(p_token text)
 returns json
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_key text := public.support_player(p_token);
@@ -407,7 +350,7 @@ create or replace function public.staff_setup_needed()
 returns boolean
 language sql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
   select not exists (select 1 from public.staff);
 $$;
@@ -416,7 +359,7 @@ create or replace function public.staff_bootstrap(p_login text, p_name text, p_p
 returns json
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_login text := lower(btrim(coalesce(p_login, '')));
@@ -464,7 +407,7 @@ create or replace function public.staff_login(p_login text, p_password text)
 returns json
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_staff public.staff;
@@ -501,7 +444,7 @@ create or replace function public.staff_logout(p_token text)
 returns json
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 begin
   delete from public.staff_sessions where token = p_token;
@@ -513,7 +456,7 @@ create or replace function public.staff_stats(p_token text)
 returns json
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_staff public.staff := public.staff_require(p_token, 'moderator');
@@ -552,7 +495,7 @@ create or replace function public.staff_threads(p_token text, p_status text defa
 returns json
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_staff public.staff := public.staff_require(p_token, 'moderator');
@@ -600,7 +543,7 @@ create or replace function public.staff_thread(p_token text, p_thread bigint)
 returns json
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_staff public.staff := public.staff_require(p_token, 'moderator');
@@ -657,7 +600,7 @@ create or replace function public.staff_claim(p_token text, p_thread bigint)
 returns json
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_staff public.staff := public.staff_require(p_token, 'moderator');
@@ -692,7 +635,7 @@ create or replace function public.staff_reply(p_token text, p_thread bigint, p_b
 returns json
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_staff public.staff := public.staff_require(p_token, 'moderator');
@@ -744,7 +687,7 @@ create or replace function public.staff_close(p_token text, p_thread bigint)
 returns json
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_staff public.staff := public.staff_require(p_token, 'moderator');
@@ -785,7 +728,7 @@ create or replace function public.staff_list(p_token text)
 returns json
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_staff public.staff := public.staff_require(p_token, 'moderator');
@@ -819,7 +762,7 @@ create or replace function public.staff_create(
 returns json
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_staff public.staff := public.staff_require(p_token, 'admin');
@@ -871,7 +814,7 @@ create or replace function public.staff_set_active(p_token text, p_staff_id bigi
 returns json
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_staff public.staff := public.staff_require(p_token, 'admin');
@@ -904,9 +847,6 @@ revoke all on function public.new_token() from public, anon, authenticated;
 revoke all on function public.staff_require(text, text) from public, anon, authenticated;
 revoke all on function public.support_player(text) from public, anon, authenticated;
 
-revoke all on function public.mc_register(text, text, text) from public, anon, authenticated;
-revoke all on function public.mc_verify(text, text) from public, anon, authenticated;
-revoke all on function public.mc_email(text) from public, anon, authenticated;
 revoke all on function public.support_login(text, text) from public, anon, authenticated;
 revoke all on function public.support_state(text) from public, anon, authenticated;
 revoke all on function public.support_send(text, text) from public, anon, authenticated;
@@ -925,9 +865,6 @@ revoke all on function public.staff_list(text) from public, anon, authenticated;
 revoke all on function public.staff_create(text, text, text, text, text) from public, anon, authenticated;
 revoke all on function public.staff_set_active(text, bigint, boolean) from public, anon, authenticated;
 
-grant execute on function public.mc_register(text, text, text) to anon, authenticated;
-grant execute on function public.mc_verify(text, text) to anon, authenticated;
-grant execute on function public.mc_email(text) to anon, authenticated;
 grant execute on function public.support_login(text, text) to anon, authenticated;
 grant execute on function public.support_state(text) to anon, authenticated;
 grant execute on function public.support_send(text, text) to anon, authenticated;
@@ -945,3 +882,5 @@ grant execute on function public.staff_close(text, bigint) to anon, authenticate
 grant execute on function public.staff_list(text) to anon, authenticated;
 grant execute on function public.staff_create(text, text, text, text, text) to anon, authenticated;
 grant execute on function public.staff_set_active(text, bigint, boolean) to anon, authenticated;
+
+notify pgrst, 'reload schema';

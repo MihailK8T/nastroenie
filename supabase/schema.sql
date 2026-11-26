@@ -276,7 +276,7 @@ create or replace function public.mc_register(p_name text, p_password text, p_em
 returns text
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_nick text := btrim(coalesce(p_name, ''));
@@ -309,7 +309,7 @@ create or replace function public.mc_verify(p_name text, p_password text)
 returns boolean
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_hash text;

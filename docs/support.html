@@ -9,6 +9,7 @@
 <meta name="description" content="Чат поддержки сервера «Настроение»: у каждого аккаунта своя переписка с администрацией.">
 <link rel="icon" type="image/png" href="assets/icon.png">
 <link rel="apple-touch-icon" href="assets/icon-256.png">
+<link rel="stylesheet" href="assets/fonts.css">
 <link rel="stylesheet" href="assets/site.css">
 <link rel="stylesheet" href="assets/support.css">
 </head>
@@ -63,6 +64,7 @@
         <div class="chat-head">
           <div class="chat-title">
             <span class="chat-dot" id="chatDot" aria-hidden="true"></span>
+            <span class="chat-ava" id="chatAva" aria-hidden="true"></span>
             <div>
               <h3 id="chatNick">Поддержка</h3>
               <p id="chatStatus">Загрузка…</p>
@@ -83,11 +85,12 @@
         <p class="form-msg" id="chatMsg" role="status" aria-live="polite" hidden></p>
       </div>
 
-      <p class="support-note">Заявки видят только администрация и ты. Не присылай пароль от аккаунта — он не нужен.</p>
+      <p class="support-note">Заявки видят только администрация и ты. Не присылай пароль от аккаунта — он не нужен. Если чат недоступен, пиши на <a href="mailto:nastroy.mine.ticket@yandex.ru">nastroy.mine.ticket@yandex.ru</a>.</p>
     </div>
   </section>
 </main>
 
+<script src="assets/avatar.js"></script>
 <script src="assets/support.js"></script>
 </body>
 </html>

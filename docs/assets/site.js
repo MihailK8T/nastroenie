@@ -48,6 +48,14 @@
     creative:  { name: "Креатив",  price: 200, days: 30 }
   };
 
+  var COIN_PACKS = {
+    "500":  { coins: 500,  price: 99 },
+    "1500": { coins: 1500, price: 249 },
+    "4000": { coins: 4000, price: 599 }
+  };
+
+  var CART_KEY = "nastroenie.cart.v1";
+
   var page = document.body.getAttribute("data-page") || "";
   var params = new URLSearchParams(window.location.search);
   var nextPage = /^(plans|coins)\.html$/.test(params.get("next") || "") ? params.get("next") : "";
@@ -301,20 +309,87 @@
     var acc = currentAccount();
 
     if (acc) {
-      var chip = document.createElement("a");
+      var wrap = document.createElement("div");
+      wrap.className = "user-wrap";
+
+      var chip = document.createElement("button");
+      chip.type = "button";
       chip.className = "user-chip";
-      chip.href = "account.html";
-      chip.textContent = acc.nick;
-      chip.title = "Открыть аккаунт";
+      chip.setAttribute("aria-haspopup", "true");
+      chip.setAttribute("aria-expanded", "false");
+      chip.title = "Меню аккаунта";
+
+      var name = document.createElement("span");
+      name.textContent = acc.nick;
+
+      var badge = document.createElement("span");
+      badge.className = "cart-badge";
+      badge.setAttribute("data-cart-count", "");
+      badge.textContent = cartCount() ? String(cartCount()) : "";
+      badge.hidden = !cartCount();
+
+      var caret = document.createElement("span");
+      caret.className = "caret";
+      caret.setAttribute("aria-hidden", "true");
+      caret.textContent = "▾";
+
+      if (window.MTAvatar) {
+        var mini = document.createElement("span");
+        mini.className = "mini-avatar";
+        mini.setAttribute("aria-hidden", "true");
+        mini.innerHTML = window.MTAvatar.svg(acc.nick, { size: 22 });
+        chip.appendChild(mini);
+      }
+
+      chip.appendChild(name);
+      chip.appendChild(badge);
+      chip.appendChild(caret);
+      var menu = document.createElement("div");
+      menu.className = "user-menu";
+
+      function addLink(href, text, withCount) {
+        var link = document.createElement("a");
+        link.href = href;
+        link.textContent = text;
+        if (withCount) {
+          var count = document.createElement("span");
+          count.className = "menu-count";
+          count.setAttribute("data-cart-count", "");
+          count.textContent = cartCount() ? String(cartCount()) : "";
+          count.hidden = !cartCount();
+          link.appendChild(count);
+        }
+        menu.appendChild(link);
+      }
+
+      addLink("cart.html", "Корзина", true);
+      addLink("account.html#purchases", "Мои покупки", false);
+      addLink("account.html#settings", "Настройки аккаунта", false);
+
+      var sep = document.createElement("div");
+      sep.className = "menu-sep";
+      menu.appendChild(sep);
+
+      addLink("plans.html", "Тарифы", false);
+      addLink("coins.html", "Монеты", false);
 
       var out = document.createElement("button");
       out.type = "button";
-      out.className = "link-btn";
+      out.className = "menu-logout";
       out.textContent = "Выйти";
       out.addEventListener("click", logout);
+      menu.appendChild(out);
 
-      slot.appendChild(chip);
-      slot.appendChild(out);
+      wrap.appendChild(chip);
+      wrap.appendChild(menu);
+
+      chip.addEventListener("click", function (event) {
+        event.stopPropagation();
+        var open = wrap.classList.toggle("open");
+        chip.setAttribute("aria-expanded", String(open));
+      });
+
+      slot.appendChild(wrap);
     } else {
       var login = document.createElement("a");
       login.className = "btn btn-sm";
@@ -322,6 +397,14 @@
       login.textContent = "Войти";
       slot.appendChild(login);
     }
+  }
+
+  function updateCartBadge() {
+    var count = cartCount();
+    document.querySelectorAll("[data-cart-count]").forEach(function (el) {
+      el.textContent = count ? String(count) : "";
+      el.hidden = !count;
+    });
   }
 
   function renderPlanButtons() {
@@ -356,7 +439,16 @@
     if (!acc) { return; }
 
     var plan = PLANS[acc.plan] || PLANS.normal;
-    $("profileAvatar").textContent = acc.nick.slice(0, 2).toUpperCase();
+    var avatarBox = $("profileAvatar");
+    if (avatarBox) {
+      if (window.MTAvatar) {
+        avatarBox.textContent = "";
+        avatarBox.classList.add("px-avatar");
+        avatarBox.innerHTML = window.MTAvatar.svg(acc.nick, { size: 48 });
+      } else {
+        avatarBox.textContent = acc.nick.slice(0, 2).toUpperCase();
+      }
+    }
     $("profileNick").textContent = acc.nick;
     $("profileEmail").textContent = acc.email || "Email не указан";
     $("profilePlan").textContent = plan.name;
@@ -368,9 +460,149 @@
     if ($("profileTerms")) {
       $("profileTerms").textContent = acc.termsAt ? "приняты " + fmtDate(acc.termsAt) : "не приняты";
     }
+    if ($("settingsNick")) { $("settingsNick").textContent = acc.nick; }
+    if ($("settingsEmail")) { $("settingsEmail").textContent = acc.email || "не указан"; }
+    if ($("settingsTerms")) { $("settingsTerms").textContent = acc.termsAt ? "приняты " + fmtDate(acc.termsAt) : "не приняты"; }
     if ($("acceptTermsBtn")) {
       $("acceptTermsBtn").hidden = !!acc.termsAt;
     }
+  }
+
+  function showCartMsg(text, kind) { showMsg("cartMsg", text, kind); }
+
+  function purchaseTitle(p) {
+    if (p.type === "plan" && PLANS[p.id]) { return "Тариф «" + PLANS[p.id].name + "»"; }
+    if (p.type === "coins" && COIN_PACKS[String(p.id)]) {
+      return "Монеты " + fmtNum(COIN_PACKS[String(p.id)].coins);
+    }
+    return "Покупка";
+  }
+
+  function renderCart() {
+    var list = $("cartList");
+    if (!list) { return; }
+
+    var cart = loadCart();
+    var total = cartTotal(cart);
+    list.replaceChildren();
+
+    cart.forEach(function (item, index) {
+      var info = cartItemInfo(item);
+      if (!info) { return; }
+      var qty = Number(item.qty) || 1;
+
+      var row = document.createElement("article");
+      row.className = "cart-item";
+
+      var main = document.createElement("div");
+      var title = document.createElement("h3");
+      title.textContent = info.title;
+      var meta = document.createElement("p");
+      meta.className = "cart-meta";
+      meta.textContent = info.meta + (qty > 1 ? " · " + qty + " шт." : "");
+      main.appendChild(title);
+      main.appendChild(meta);
+
+      var price = document.createElement("div");
+      price.className = "cart-price";
+      price.textContent = fmtNum(info.price * qty) + " ₽";
+
+      var remove = document.createElement("button");
+      remove.type = "button";
+      remove.className = "cart-remove";
+      remove.textContent = "Убрать";
+      remove.addEventListener("click", function () {
+        removeFromCart(index);
+        renderCart();
+        showCartMsg("Удалено из корзины.", "ok");
+      });
+
+      row.appendChild(main);
+      row.appendChild(price);
+      row.appendChild(remove);
+      list.appendChild(row);
+    });
+
+    if ($("cartEmpty")) { $("cartEmpty").hidden = cart.length > 0; }
+    if ($("cartTotal")) { $("cartTotal").textContent = fmtNum(total) + " ₽"; }
+    if ($("checkoutBtn")) { $("checkoutBtn").disabled = !cart.length; }
+    updateCartBadge();
+  }
+
+  function renderPurchases() {
+    var list = $("purchaseList");
+    if (!list) { return; }
+
+    var acc = currentAccount();
+    var items = acc && Array.isArray(acc.purchases) ? acc.purchases : [];
+    list.replaceChildren();
+
+    items.forEach(function (p) {
+      var row = document.createElement("div");
+      row.className = "purchase-item";
+
+      var main = document.createElement("div");
+      var title = document.createElement("b");
+      title.textContent = purchaseTitle(p);
+      var meta = document.createElement("span");
+      meta.className = "purchase-meta";
+      meta.textContent = fmtDateTime(p.at) + (p.qty > 1 ? " · " + p.qty + " шт." : "");
+      main.appendChild(title);
+      main.appendChild(meta);
+
+      var sum = document.createElement("b");
+      sum.textContent = fmtNum(p.total || 0) + " ₽";
+
+      row.appendChild(main);
+      row.appendChild(sum);
+      list.appendChild(row);
+    });
+
+    if ($("purchasesEmpty")) { $("purchasesEmpty").hidden = items.length > 0; }
+  }
+
+  function checkoutCart() {
+    var acc = currentAccount();
+    if (!acc) {
+      gate("cart.html", "", "login");
+      return;
+    }
+
+    var cart = loadCart();
+    if (!cart.length) {
+      showCartMsg("Корзина пуста.", "error");
+      return;
+    }
+    if (!consentChecked("cartConsent")) {
+      showCartMsg("Отметьте согласие с Пользовательским соглашением и Политикой конфиденциальности.", "error");
+      if ($("cartConsent")) { $("cartConsent").focus(); }
+      return;
+    }
+
+    markTerms(acc);
+
+    var total = 0;
+    var count = 0;
+    cart.forEach(function (item) {
+      var info = cartItemInfo(item);
+      if (!info) { return; }
+      var qty = Number(item.qty) || 1;
+      if (item.type === "plan") { applyPlan(acc, item.id, qty); }
+      else { applyCoins(acc, item.id, qty); }
+      total += info.price * qty;
+      count += qty;
+    });
+
+    if (!count) {
+      showCartMsg("В корзине нет доступных товаров.", "error");
+      return;
+    }
+
+    saveAccounts();
+    saveCart([]);
+    render();
+    renderCart();
+    showCartMsg("Заказ оформлен: " + count + " поз. на " + fmtNum(total) + " ₽.", "ok");
   }
 
   function render() {
@@ -382,6 +614,10 @@
     if (hero) {
       hero.textContent = currentAccount() ? "Личный кабинет" : "Создать аккаунт";
     }
+
+    renderCart();
+    renderPurchases();
+    updateCartBadge();
   }
 
   function logout() {
@@ -404,6 +640,118 @@
     }
   }
 
+  function loadCart() {
+    try {
+      var raw = JSON.parse(localStorage.getItem(CART_KEY) || "[]");
+      if (!Array.isArray(raw)) { return []; }
+      return raw.filter(function (item) {
+        return item && (item.type === "plan" || item.type === "coins") && item.id;
+      });
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveCart(items) {
+    try { localStorage.setItem(CART_KEY, JSON.stringify(items)); } catch (e) { /* ignore */ }
+    updateCartBadge();
+  }
+
+  function cartCount() {
+    return loadCart().reduce(function (sum, item) {
+      return sum + (Number(item.qty) || 1);
+    }, 0);
+  }
+
+  function cartItemInfo(item) {
+    if (!item) { return null; }
+    if (item.type === "plan") {
+      var plan = PLANS[item.id];
+      if (!plan) { return null; }
+      return {
+        title: "Тариф «" + plan.name + "»",
+        meta: plan.days ? plan.days + " дней" : "бессрочно",
+        price: plan.price
+      };
+    }
+    var pack = COIN_PACKS[String(item.id)];
+    if (!pack) { return null; }
+    return {
+      title: "Монеты " + fmtNum(pack.coins),
+      meta: pack.price + " ₽ за пак",
+      price: pack.price
+    };
+  }
+
+  function addToCart(type, id) {
+    var cart = loadCart();
+    var found = null;
+    cart.forEach(function (item) {
+      if (item.type === type && String(item.id) === String(id)) { found = item; }
+    });
+    if (found) {
+      found.qty = (Number(found.qty) || 1) + 1;
+    } else {
+      cart.push({ type: type, id: String(id), qty: 1 });
+    }
+    saveCart(cart);
+    return cart;
+  }
+
+  function removeFromCart(index) {
+    var cart = loadCart();
+    cart.splice(index, 1);
+    saveCart(cart);
+    return cart;
+  }
+
+  function cartTotal(cart) {
+    return cart.reduce(function (sum, item) {
+      var info = cartItemInfo(item);
+      return info ? sum + info.price * (Number(item.qty) || 1) : sum;
+    }, 0);
+  }
+
+  function recordPurchase(acc, type, id, qty, price) {
+    acc.purchases = Array.isArray(acc.purchases) ? acc.purchases : [];
+    acc.purchases.unshift({
+      type: type,
+      id: String(id),
+      qty: qty,
+      price: price,
+      total: price * qty,
+      at: Date.now()
+    });
+    if (acc.purchases.length > 50) { acc.purchases.length = 50; }
+  }
+
+  function applyPlan(acc, key, qty) {
+    var plan = PLANS[key];
+    if (!plan) { return false; }
+    var count = Math.max(1, Number(qty) || 1);
+    for (var i = 0; i < count; i++) {
+      if (key === "normal") {
+        acc.plan = "normal";
+        acc.planUntil = 0;
+      } else {
+        var base = (acc.plan === key && acc.planUntil > Date.now()) ? acc.planUntil : Date.now();
+        acc.plan = key;
+        acc.planUntil = base + plan.days * 24 * 60 * 60 * 1000;
+      }
+    }
+    recordPurchase(acc, "plan", key, count, plan.price);
+    return true;
+  }
+
+  function applyCoins(acc, id, qty) {
+    var pack = COIN_PACKS[String(id)];
+    if (!pack) { return false; }
+    var count = Math.max(1, Number(qty) || 1);
+    acc.coins = (acc.coins || 0) + pack.coins * count;
+    recordPurchase(acc, "coins", String(id), count, pack.price);
+    return true;
+  }
+
   function activatePlan(key) {
     if (!consentChecked("planConsent")) {
       showPlanMsg("Отметьте согласие с Пользовательским соглашением и Политикой конфиденциальности.", "error");
@@ -422,14 +770,7 @@
 
     markTerms(acc);
 
-    if (key === "normal") {
-      acc.plan = "normal";
-      acc.planUntil = 0;
-    } else {
-      var base = (acc.plan === key && acc.planUntil > Date.now()) ? acc.planUntil : Date.now();
-      acc.plan = key;
-      acc.planUntil = base + plan.days * 24 * 60 * 60 * 1000;
-    }
+    if (!applyPlan(acc, key, 1)) { return; }
     saveAccounts();
     render();
     showPlanMsg(
@@ -451,7 +792,7 @@
       return;
     }
     markTerms(acc);
-    acc.coins = (acc.coins || 0) + amount;
+    if (!applyCoins(acc, String(amount), 1)) { return; }
     saveAccounts();
     render();
     showCoinMsg("Начислено " + fmtNum(amount) + " монет. Баланс: " + fmtNum(acc.coins) + ".", "ok");
@@ -713,6 +1054,38 @@
       });
     });
 
+    document.querySelectorAll("[data-add-plan]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        addToCart("plan", btn.getAttribute("data-add-plan"));
+        renderCart();
+        showPlanMsg("Добавлено в корзину. Оформить можно на странице «Корзина».", "ok");
+      });
+    });
+
+    document.querySelectorAll("[data-add-coins]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        addToCart("coins", btn.getAttribute("data-add-coins"));
+        renderCart();
+        showCoinMsg("Добавлено в корзину. Оформить можно на странице «Корзина».", "ok");
+      });
+    });
+
+    if ($("checkoutBtn")) {
+      $("checkoutBtn").addEventListener("click", checkoutCart);
+    }
+
+    function closeMenus() {
+      document.querySelectorAll(".user-wrap.open").forEach(function (wrap) {
+        wrap.classList.remove("open");
+        var chip = wrap.querySelector(".user-chip");
+        if (chip) { chip.setAttribute("aria-expanded", "false"); }
+      });
+    }
+    document.addEventListener("click", closeMenus);
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape") { closeMenus(); }
+    });
+
     if (page === "account" && !currentAccount() && nextPage) {
       showAuthMsg(
         nextPage === "plans.html"
@@ -730,6 +1103,9 @@
       if (event.key === LS_ACCOUNTS) {
         accounts = loadAccounts();
         render();
+      } else if (event.key === CART_KEY) {
+        renderCart();
+        updateCartBadge();
       }
     });
 

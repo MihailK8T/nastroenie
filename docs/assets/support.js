@@ -148,6 +148,10 @@
   function render() {
     if (!state) { return; }
     $("chatNick").textContent = "Аккаунт " + state.nick;
+    var chatAvatar = $("chatAva");
+    if (chatAvatar && window.MTAvatar) {
+      chatAvatar.innerHTML = window.MTAvatar.svg(state.nick, { size: 40 });
+    }
     statusView();
 
     var log = $("chatLog");

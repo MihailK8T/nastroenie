@@ -58,7 +58,7 @@
 
   var page = document.body.getAttribute("data-page") || "";
   var params = new URLSearchParams(window.location.search);
-  var nextPage = /^(plans|coins)\.html$/.test(params.get("next") || "") ? params.get("next") : "";
+  var nextPage = /^(plans|coins|cart)\.html$/.test(params.get("next") || "") ? params.get("next") : "";
   var activeTab = params.get("mode") === "register" ? "register" : "login";
 
   var $ = function (id) { return document.getElementById(id); };
@@ -1040,17 +1040,17 @@
     document.querySelectorAll("[data-plan]").forEach(function (btn) {
       btn.addEventListener("click", function () {
         var key = btn.getAttribute("data-plan");
-        if (!currentAccount()) {
-          gate("plans.html", key, "login");
-          return;
-        }
-        activatePlan(key);
+        addToCart("plan", key);
+        renderCart();
+        showPlanMsg("Добавлено в корзину. Оформить можно на странице «Корзина».", "ok");
       });
     });
 
     document.querySelectorAll("[data-coins]").forEach(function (btn) {
       btn.addEventListener("click", function () {
-        addCoins(Number(btn.getAttribute("data-coins")) || 0);
+        addToCart("coins", btn.getAttribute("data-coins"));
+        renderCart();
+        showCoinMsg("Добавлено в корзину. Оформить можно на странице «Корзина».", "ok");
       });
     });
 
@@ -1088,7 +1088,9 @@
 
     if (page === "account" && !currentAccount() && nextPage) {
       showAuthMsg(
-        nextPage === "plans.html"
+        nextPage === "cart.html"
+          ? "Войдите или создайте аккаунт, чтобы оформить заказ из корзины."
+          : nextPage === "plans.html"
           ? "Войдите или создайте аккаунт, чтобы подключить тариф."
           : "Войдите или создайте аккаунт, чтобы купить монеты.",
         "error"

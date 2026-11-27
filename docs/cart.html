@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#161718">
+<title>Корзина — Настроение</title>
+<meta name="description" content="Корзина тарифов и монет сервера «Настроение»: проверьте состав заказа и оформите покупку на свой игровой аккаунт.">
+<link rel="icon" type="image/png" href="assets/icon.png">
+<link rel="apple-touch-icon" href="assets/icon-256.png">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body data-page="cart">
+
+<header class="site-head">
+  <div class="wrap head-in">
+    <a class="brand" href="index.html"><i aria-hidden="true"></i>Настроение</a>
+    <nav class="nav" aria-label="Разделы">
+      <a href="server.html">Сервер</a>
+      <a href="plans.html">Тарифы</a>
+      <a href="coins.html">Монеты</a>
+      <a href="support.html">Поддержка</a>
+      <a href="account.html">Аккаунт</a>
+    </nav>
+    <div class="head-act" id="headerSlot">
+      <a class="btn btn-sm" href="account.html">Войти</a>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+  <div class="wrap page-head">
+    <p class="kicker">Заказ</p>
+    <h1>Корзина</h1>
+    <p class="lead">Тарифы и паки монет, которые вы выбрали. Проверьте состав и оформите заказ на свой игровой аккаунт.</p>
+  </div>
+
+  <section class="page-body">
+    <div class="wrap">
+      <p class="form-msg" id="cartMsg" role="status" aria-live="polite" hidden></p>
+
+      <div class="cart-grid">
+        <div>
+          <div class="cart-list" id="cartList"></div>
+          <div class="cart-empty" id="cartEmpty">
+            Корзина пуста. Добавьте <a href="plans.html">тариф</a> или <a href="coins.html">монеты</a> — они появятся здесь.
+          </div>
+        </div>
+
+        <aside class="panel cart-summary">
+          <h3>Итого</h3>
+          <div class="cart-total"><span>К оплате</span><b id="cartTotal">0 ₽</b></div>
+
+          <div class="consent-field">
+            <label class="consent">
+              <input type="checkbox" id="cartConsent">
+              <span>Принимаю <a href="terms.html" target="_blank" rel="noopener">Пользовательское соглашение</a> и <a href="privacy.html" target="_blank" rel="noopener">Политику конфиденциальности</a>.</span>
+            </label>
+          </div>
+
+          <button class="btn btn-block" type="button" id="checkoutBtn" disabled>Оформить</button>
+          <a class="btn btn-ghost btn-block" href="plans.html">Добавить тариф</a>
+        </aside>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="wrap">
+    <div class="foot-grid">
+      <div>
+        <h4>Настроение</h4>
+        <p>Фан-проект Minecraft-сервера. Не связан с Mojang Studios и Microsoft.</p>
+      </div>
+      <div>
+        <h4>Разделы</h4>
+        <a href="server.html">Сервер</a>
+        <a href="plans.html">Тарифы</a>
+        <a href="coins.html">Монеты</a>
+        <a href="account.html">Аккаунт</a>
+      </div>
+      <div>
+        <h4>Поддержка</h4>
+        <p>Вопросы по оплате, тарифам и доступу — в личном чате с администрацией. Ответ приходит в тот же раздел.</p>
+        <p>Почта: <a href="mailto:nastroy.mine.ticket@yandex.ru">nastroy.mine.ticket@yandex.ru</a></p>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>© 2026 «Настроение» · by KOT</span>
+      <span>Корзина · тарифы и монеты</span>
+    </div>
+  </div>
+</footer>
+
+<script src="assets/avatar.js"></script>
+<script src="assets/site.js"></script>
+</body>
+</html>

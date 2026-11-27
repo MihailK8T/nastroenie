@@ -416,7 +416,7 @@
         btn.textContent = "Подключён";
         btn.disabled = true;
       } else {
-        btn.textContent = "Подключить";
+        btn.textContent = "В корзину";
         btn.disabled = false;
       }
     });
@@ -670,7 +670,7 @@
       if (!plan) { return null; }
       return {
         title: "Тариф «" + plan.name + "»",
-        meta: plan.days ? plan.days + " дней" : "бессрочно",
+        meta: plan.days ? "доступ на " + plan.days + " дней" : "бессрочно",
         price: plan.price
       };
     }
